@@ -1,10 +1,14 @@
 $(document).ready(function(){
   var action;
-  if(window.action == 'list'){
+
+  if (window.action == 'list') {
     action = listFiles;
-  } else if(window.action = 'doc'){
+  } else if (window.action = 'doc') {
     action = displayFile;
   }
+
+  var CLIENT_ID = '80355934782-n3vs4o6565a12ol96b1qe2o5b54174av.apps.googleusercontent.com';
+  var SCOPES = ['https://www.googleapis.com/auth/drive.readonly'];
 
   /**
    * Check if current user has authorized this application.
@@ -63,7 +67,6 @@ $(document).ready(function(){
         'maxResults': 10,
         'q': "mimeType = 'application/vnd.google-apps.document'"
       });
-
       request.execute(function(resp) {
         var files = resp.items;
         if (files && files.length > 0) {
@@ -79,11 +82,13 @@ $(document).ready(function(){
 
   function displayFile() {
     fileId = window.location.hash.substring(1);
+    console.log("hash = " + window.location.hash);
+    console.log("fileId " + fileId);
     var request = gapi.client.drive.files.get({fileId: fileId});
 
     request.execute(function(resp) {
       var accessToken = gapi.auth.getToken().access_token;
-
+      console.log(resp);
       $.ajax({
         url: resp.exportLinks["text/plain"],
         type: "GET",
@@ -91,6 +96,7 @@ $(document).ready(function(){
           xhr.setRequestHeader('Authorization', "Bearer "+accessToken);
         },
         success: function( data ) {
+          console.log(data);
           $('#output').html(data.replace(/\n/g, "<br>"));
         }
       });
