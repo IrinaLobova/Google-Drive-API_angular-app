@@ -11,7 +11,7 @@ var connect = require('gulp-connect');
 gulp.task('buildApp', function(){
   return gulp.src(['src/js/config.js', 'src/js/**/*.js'])
     .pipe(concat('app.js'))
-    .pipe(uglify())
+    .pipe(uglify({mangle: false}))
     .pipe(gulp.dest('dist'))
     .pipe(connect.reload());
 });
@@ -19,7 +19,9 @@ gulp.task('buildApp', function(){
 gulp.task('buildVendor', function(){
   return gulp.src([
     'bower_components/jquery/dist/jquery.min.js',
-    'bower_components/**/*.min.js'])
+    'bower_components/bootstrap/dist/js/bootstrap.min.js',
+    'bower_components/angular/angular.min.js',
+    'bower_components/angular-route/angular-route.min.js'])
     .pipe(concat('vendors.js'))
     .pipe(uglify())
     .pipe(gulp.dest('dist'));
@@ -41,7 +43,7 @@ gulp.task('moveHTML', function(){
     .pipe(connect.reload());
 });
 
-gulp.task('build', ['buildApp', 'buildVendor', 'buildCSS', 'moveHTML']);
+gulp.task('build', ['buildVendor', 'buildApp', 'buildCSS', 'moveHTML']);
 
 // **********************************
 

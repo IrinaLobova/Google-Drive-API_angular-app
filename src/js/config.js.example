@@ -1,2 +1,0 @@
-var CLIENT_ID = '80355934782-n3vs4o6565a12ol96b1qe2o5b54174av.apps.googleusercontent.com';
-var SCOPES = ['https://www.googleapis.com/auth/drive.readonly'];
