@@ -3,7 +3,8 @@ var app = angular.module('zombieDrive', ['ngRoute']);
 app.config(['$routeProvider', function($routeProvider){
 	$routeProvider
 		.when('/doc', {
-			templateUrl: 'templates/doc.html'
+			templateUrl: 'templates/doc.html',
+			controller: docController
 		});
 }]);
 
@@ -12,19 +13,22 @@ app.service('googleDriveService', function(){
 
 		var action;
 		var authResponse;
+		var files;
+		var authCb;
 
 		var pub = {};
-		pub.init = function() {
+		pub.init = function(cb) {
 			var interval = window.setInterval(function(){
 				//console.log(this);
 	        	if (pub.checkAuth){
-	          		pub.checkAuth();
+	          		pub.checkAuth(cb);
 	          		window.clearInterval(interval);
 	        	}
 	      	}, 2000);
 	    };
 
-		pub.checkAuth = function() {
+		pub.checkAuth = function(cb) {
+			authCb = cb;
 			gapi.auth.authorize(
 	      		{
 	        		'client_id': window.config.CLIENT_ID,
@@ -36,14 +40,26 @@ app.service('googleDriveService', function(){
 	    pub.handleAuthResult = function(authResult) {
 	    	if (authResult && !authResult.error) {
 	      		pub.loadDriveApi();
-	      		authResponse = true;
+	      		authCb();
+	      		//authResponse = true;
 	    	} else {
-	      		authResponse = false;
+	      		console.log("error");
+	      		//authResponse = false;
 	    	}
 	 	 };
 
 	 	pub.loadDriveApi = function() {
 	    	gapi.client.load('drive', 'v2', action);
+	  	};
+
+	  	pub.loadFiles = function() {
+	  		var request = gapi.client.drive.files.list({
+        		'maxResults': 10,
+        		'q': "mimeType = 'application/vnd.google-apps.document'"
+      		});
+      		request.execute(function(resp) {
+        		files = resp.items;
+	  		});
 	  	};
 
 	  	pub.handleAuthClick = function(event) {
@@ -58,6 +74,10 @@ app.service('googleDriveService', function(){
 
 	  	pub.getResponse = function() {
 	  		return authResponse;
+	  	};
+
+	  	pub.getFiles = function(){
+	  		return files;
 	  	};
 
 	  	return pub;
@@ -79,9 +99,20 @@ app.controller('listController', ['googleDriveService', '$rootScope', function(g
     		}
   		}
 	);
-
-	googleDriveService.drive.init();
 	
+	var hideCb = function() { 
+		vm.hide = true; 
+		scope.$digest();
+	};
+
+	var listCb = function() {
+		return;
+	};
+
+	googleDriveService.drive.init(hideCb);
+
+
+	/*
 	var interval = window.setInterval(function(){
 		result = googleDriveService.drive.getResponse();
 		if (result !== undefined) {
@@ -89,7 +120,7 @@ app.controller('listController', ['googleDriveService', '$rootScope', function(g
 	    	window.clearInterval(interval);
 	    }
 	}, 2000);
-
+	
 	var hideCallback = function() {
 		if (result === true) {
 			// Hide auth UI, then load client library.
@@ -98,7 +129,8 @@ app.controller('listController', ['googleDriveService', '$rootScope', function(g
 			scope.$digest();
 			//console.log(vm.name);
 		}
-	}
+	};
+	*/
 }]);
 
 app.controller('docController', ['googleDriveService', function(googleDriveService){

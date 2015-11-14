@@ -3,28 +3,17 @@
     <head>
         <link rel="stylesheet" href="styles.css"/>
         <script>
-        // var init = function() {
-        //   var interval = window.setInterval(function(){
-        //     if(window.checkAuth){
-        //       window.checkAuth();
-        //       window.clearInterval(interval);
-        //     }
-        //   }, 2000);
-        // };
+
         //window.action = "list";
         </script>
         <script src="https://apis.google.com/js/client.js"></script>
         <script src="vendors.js"></script>
         <script src="app.js"></script>
-        <!--
-        <script src="https://apis.google.com/js/client.js?onload=init"></script>
-        -->
 
     </head>
     <body class="container" ng-controller="listController as vm">
         <h1>Hello Google DRRrrRrvrr!</h1>
         <div id="authorize-div" ng-hide="vm.hide">
-            {{ vm.name }}
             <span>Authorize access to Drive API</span>
             <!--Button for the user to click to initiate auth sequence -->
         <!--<button id="authorize-btn">
