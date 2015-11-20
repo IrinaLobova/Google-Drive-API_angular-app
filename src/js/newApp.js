@@ -1,34 +1,16 @@
 var app = angular.module('zombieDrive', ['ngRoute']);
 
-app.config(['$routeProvider', function($routeProvider){
-	$routeProvider
-		.when('/doc', {
-			templateUrl: 'templates/doc.html',
-			controller: docController
-		});
-}]);
-
 app.service('googleDriveService', function(){
 	this.drive = (function(){
 
 		var action;
 		var authResponse;
-		var files;
+		var files = undefined;
 		var authCb;
 
 		var pub = {};
-		pub.init = function(cb) {
-			var interval = window.setInterval(function(){
-				//console.log(this);
-	        	if (pub.checkAuth){
-	          		pub.checkAuth(cb);
-	          		window.clearInterval(interval);
-	        	}
-	      	}, 2000);
-	    };
 
-		pub.checkAuth = function(cb) {
-			authCb = cb;
+		pub.checkAuth = function() {
 			gapi.auth.authorize(
 	      		{
 	        		'client_id': window.config.CLIENT_ID,
@@ -40,17 +22,14 @@ app.service('googleDriveService', function(){
 	    pub.handleAuthResult = function(authResult) {
 	    	if (authResult && !authResult.error) {
 	      		pub.loadDriveApi();
-	      		authCb();
-	      		//authResponse = true;
 	    	} else {
 	      		console.log("error");
-	      		//authResponse = false;
 	    	}
 	 	 };
 
 	 	pub.loadDriveApi = function() {
-	    	gapi.client.load('drive', 'v2', action);
-	  	};
+	 		gapi.client.load('drive', 'v2', action);
+		};
 
 	  	pub.loadFiles = function() {
 	  		var request = gapi.client.drive.files.list({
@@ -59,91 +38,99 @@ app.service('googleDriveService', function(){
       		});
       		request.execute(function(resp) {
         		files = resp.items;
+        		console.log("service" + files);
 	  		});
 	  	};
 
 	  	pub.handleAuthClick = function(event) {
 	    	gapi.auth.authorize(
 	      	{
-	        	client_id: clientIdService.CLIENT_ID, 
-	        	scope: clientIdService.SCOPES, 
+	        	client_id: window.config.CLIENT_ID, 
+	        	scope: window.config.SCOPES, 
 	        	immediate: false
 	      	}, pub.handleAuthResult);
 	    	return false;
-	  	};
-
-	  	pub.getResponse = function() {
-	  		return authResponse;
 	  	};
 
 	  	pub.getFiles = function(){
 	  		return files;
 	  	};
 
+	  	pub.setAction = function(actionString) {
+	  		if (actionString === 'list')
+	  			action = pub.loadFiles;
+	  		else if (actionString === 'doc')
+	  			action = action;
+	  	};
+
 	  	return pub;
 	})();
 });
 
-app.controller('listController', ['googleDriveService', '$rootScope', function(googleDriveService, $rootScope){
+app.controller('listController', ['googleDriveService', '$rootScope', 
+						  function(googleDriveService, $rootScope) {
 	var vm = this;
-
 	var scope = $rootScope;
-	var result;
-	vm.hide = false;
-	
+	vm.files;
+
 	scope.$watch(
-  		function() { return vm.hide; },
+  		function() { return vm.files; },
   		function(newValue, oldValue) {
     		if ( newValue !== oldValue ) {
-      			vm.hide = newValue;
+      			vm.files = newValue;
     		}
   		}
 	);
-	
-	var hideCb = function() { 
-		vm.hide = true; 
-		scope.$digest();
-	};
 
-	var listCb = function() {
-		return;
-	};
-
-	googleDriveService.drive.init(hideCb);
-
-
-	/*
-	var interval = window.setInterval(function(){
-		result = googleDriveService.drive.getResponse();
-		if (result !== undefined) {
-	    	hideCallback();
-	    	window.clearInterval(interval);
-	    }
-	}, 2000);
-	
-	var hideCallback = function() {
-		if (result === true) {
-			// Hide auth UI, then load client library.
-			//console.log("result = " + result);
-			vm.hide = true;
+	googleDriveService.drive.setAction('list');
+	var interval = window.setInterval(function() {
+		var result = googleDriveService.drive.getFiles();
+		if (result) {
+			window.clearInterval(interval);
+			vm.files = result;
 			scope.$digest();
-			//console.log(vm.name);
+			showFiles(vm.files);
 		}
+	}, 1000);
+	
+	var showFiles = function() {
+		console.log(vm.files);
 	};
-	*/
+
+	var listFiles = function(){
+
+	};
+
 }]);
 
 app.controller('docController', ['googleDriveService', function(googleDriveService){
 
 }]);
 
-// app.directive('authBtn', ['googleDriveService', function(googleDriveService){
-// 	var link = function(scope, element, attrs){
-// 		scope.authorize = googleDriveService.handleAuthClick;
-// 	};
-// 	return {
-// 		scope: {},
-// 		templateUrl: 'templates/oauth_button.html',
-// 		link: link
-// 	};
-// }]);
+app.controller('authbtnController', ['googleDriveService', function(googleDriveService){
+	var vm = this;
+	vm.authorize = googleDriveService.drive.handleAuthClick;
+}]);
+
+app.directive('authbtn', ['googleDriveService', function(googleDriveService){
+	return {
+		templateUrl: '../templates/authBtn.html',
+	};
+}]);
+
+app.config(['$routeProvider', function($routeProvider){
+	$routeProvider
+		.when('/list', {
+			templateUrl: 'templates/list.html',
+			controller: 'listController',
+			controllerAs: 'vm'
+		})
+		.when('/doc', {
+			templateUrl: 'templates/doc.html',
+			controller: 'docController',
+			controllerAs: 'vm'
+		})
+		.otherwise({
+			redirectTo: '/'
+		});
+}]);

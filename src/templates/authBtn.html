@@ -1,6 +1,4 @@
-<div id="authorize-div">
-    <h4>Authorize access to Drive API</h4>
-    <!--Button for the user to click to initiate auth sequence -->
-    <button class="btn btn-primary" id="authorize-btn" ng-click="scope.authorize()">
-    </button>
-</div>
+<!--Button for the user to click to initiate auth sequence -->
+<a class="btn btn-primary" id="authorize-btn" ng-click="vm.authorize()" ng-controller="authbtnController as vm" href="#/list">
+	Authorize
+</a>

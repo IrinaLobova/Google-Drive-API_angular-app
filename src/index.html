@@ -11,7 +11,7 @@
         <script src="app.js"></script>
 
     </head>
-    <body class="container" ng-controller="listController as vm">
+    <body class="container">
         <h1>Hello Google DRRrrRrvrr!</h1>
         <div id="authorize-div" ng-hide="vm.hide">
             <span>Authorize access to Drive API</span>
@@ -19,12 +19,10 @@
         <!--<button id="authorize-btn">
                 Authorize
             </button>-->
+            <authbtn></authbtn>
         </div>
-        <authBtn></authBtn>
+        <div id="output" class="well" ng-view></div>
 
-        <div id="output" class="well">
-            <ul></ul>
-        </div>
-
+        
     </body>
 </html>
