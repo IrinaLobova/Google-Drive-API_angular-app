@@ -1,22 +1,28 @@
-var app = angular.module('zombieDrive', ['ngRoute']);
+var app = angular.module('zombieDrive', ['ngRoute', 'ngSanitize']);
 
-app.service('googleDriveService', function(){
+/*
+	TODO:
+	1. doc controller should know file.id to retrieve file object with plain/text url from service
+	2. create a service method with angular http request to get file via text/plain link
+	3. save the result of http request so that controller can replace \n with <br> + zombify
+	4. output the resulted text with replaced \n and zombify
+*/
+
+app.service('googleDriveService', ['$http', function($http){
 	this.drive = (function(){
 
 		var action;
-		var authResponse;
 		var files = undefined;
-		var authCb;
+		var doctext;
 
 		var pub = {};
 
 		pub.checkAuth = function() {
-			gapi.auth.authorize(
-	      		{
-	        		'client_id': window.config.CLIENT_ID,
-	        		'scope': window.config.SCOPES,
-	        		'immediate': true
-	      		}, pub.handleAuthResult);
+			gapi.auth.authorize({
+        		'client_id': window.config.CLIENT_ID,
+        		'scope': window.config.SCOPES,
+        		'immediate': true
+      		}, pub.handleAuthResult);
 		};
 
 	    pub.handleAuthResult = function(authResult) {
@@ -63,9 +69,38 @@ app.service('googleDriveService', function(){
 	  			action = action;
 	  	};
 
+	  	pub.getTextUrl = function(id) {
+	  		for (var i =0; i < files.length; i++) {
+	  			if (id === files[i].id){
+	  				return files[i].exportLinks['text/plain'];
+	  			}
+	  		}
+	  	};
+
+	  	pub.getFileText = function(id) {
+	  		var url = pub.getTextUrl(id);
+	  		console.log("request for file contents " + url);
+	  		$http.get(url, {
+				headers: { 'Authorization' : "Bearer " + gapi.auth.getToken().access_token }
+	  		}).then(function successCallback(response) {
+    				// this callback will be called asynchronously
+    				// when the response is available
+    				console.log(response.data);
+    				doctext = response.data;
+  				}, function errorCallback(response) {
+    				// called asynchronously if an error occurs
+    				// or server returns response with an error status.
+    				console.log('smth went wrong');
+  			});
+	  	};
+
+	  	pub.getDocText = function(){
+	  		return doctext;
+	  	}
+
 	  	return pub;
 	})();
-});
+}]);
 
 app.controller('listController', ['googleDriveService', '$rootScope', 
 						  function(googleDriveService, $rootScope) {
@@ -97,14 +132,36 @@ app.controller('listController', ['googleDriveService', '$rootScope',
 		console.log(vm.files);
 	};
 
-	var listFiles = function(){
-
-	};
-
 }]);
 
-app.controller('docController', ['googleDriveService', function(googleDriveService){
+app.controller('docController', ['googleDriveService', '$location', '$rootScope',
+	                     function(googleDriveService, $location, $rootScope){
+	var vm = this;
+	var id = $location.path().substring(5);
+	console.log("controller doc" + id);
 
+    var scope = $rootScope;
+	vm.doctext;
+
+	googleDriveService.drive.getFileText(id);
+
+	scope.$watch(
+  		function() { return vm.doctext; },
+  		function(newValue, oldValue) {
+    		if ( newValue !== oldValue ) {
+      			vm.doctext = newValue;
+    		}
+  		}
+	);
+
+	var interval = window.setInterval(function() {
+		var result = googleDriveService.drive.getDocText();
+		if (result) {
+			window.clearInterval(interval);
+			vm.doctext = result.replace(/\n/g, "<br>");
+			scope.$digest();
+		}
+	}, 1000);
 }]);
 
 app.controller('authbtnController', ['googleDriveService', function(googleDriveService){
@@ -125,7 +182,7 @@ app.config(['$routeProvider', function($routeProvider){
 			controller: 'listController',
 			controllerAs: 'vm'
 		})
-		.when('/doc', {
+		.when('/doc/:fileId', {
 			templateUrl: 'templates/doc.html',
 			controller: 'docController',
 			controllerAs: 'vm'
