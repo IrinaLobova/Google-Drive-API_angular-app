@@ -12,8 +12,8 @@ app.service('googleDriveService', ['$http', function($http){
 	this.drive = (function(){
 
 		var action;
-		var files = undefined;
-		var doctext;
+		var files;
+		var doctext = undefined;
 
 		var pub = {};
 
@@ -102,6 +102,33 @@ app.service('googleDriveService', ['$http', function($http){
 	})();
 }]);
 
+app.service('zombifyService', ['$http', function($http){
+	var doctext;
+	this.translate = (function(){
+		var pub = {};
+		pub.tozombie = function(text){
+			var url = 'http://ancient-anchorage-9224.herokuapp.com/zombify?q=' + text;
+
+		    $http.get(url, {
+	  		}).then(function successCallback(response) {
+    				// this callback will be called asynchronously
+    				// when the response is available
+    				doctext = response.data.message;
+    				console.log(response.data.message);
+  				}, function errorCallback(response) {
+    				// called asynchronously if an error occurs
+    				// or server returns response with an error status.
+    				console.log('smth went wrong');
+  			});
+		};
+		pub.getText = function(){
+			return doctext;
+		}
+
+		return pub;
+	})();
+}]);
+
 app.controller('listController', ['googleDriveService', '$rootScope', 
 						  function(googleDriveService, $rootScope) {
 	var vm = this;
@@ -134,16 +161,14 @@ app.controller('listController', ['googleDriveService', '$rootScope',
 
 }]);
 
-app.controller('docController', ['googleDriveService', '$location', '$rootScope',
-	                     function(googleDriveService, $location, $rootScope){
+app.controller('docController', ['googleDriveService', 'zombifyService', '$location', '$rootScope',
+	                     function(googleDriveService, zombifyService, $location, $rootScope){
 	var vm = this;
 	var id = $location.path().substring(5);
 	console.log("controller doc" + id);
 
     var scope = $rootScope;
 	vm.doctext;
-
-	googleDriveService.drive.getFileText(id);
 
 	scope.$watch(
   		function() { return vm.doctext; },
@@ -154,12 +179,23 @@ app.controller('docController', ['googleDriveService', '$location', '$rootScope'
   		}
 	);
 
+	googleDriveService.drive.getFileText(id);
+
 	var interval = window.setInterval(function() {
 		var result = googleDriveService.drive.getDocText();
 		if (result) {
 			window.clearInterval(interval);
-			vm.doctext = result.replace(/\n/g, "<br>");
-			scope.$digest();
+			var doctext = result.replace(/\n/g, "<br>");
+			zombifyService.translate.tozombie(doctext);
+
+			var interval2 = window.setInterval(function(){
+				var result2 = zombifyService.translate.getText(); 
+				if (result2 !== undefined) {
+					window.clearInterval(interval2);
+					vm.doctext = zombifyService.translate.getText();
+					scope.$digest();
+				};
+			}, 1000);
 		}
 	}, 1000);
 }]);
