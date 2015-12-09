@@ -1,11 +1,7 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="zombieDrive">
+<html lang="en" ng-app="zombiedrive">
     <head>
         <link rel="stylesheet" href="styles.css"/>
-        <script>
-
-        //window.action = "list";
-        </script>
         <script src="https://apis.google.com/js/client.js"></script>
         <script src="vendors.js"></script>
         <script src="app.js"></script>
@@ -13,16 +9,10 @@
     </head>
     <body class="container">
         <h1>Hello Google DRRrrRrvrr!</h1>
-        <div id="authorize-div" ng-hide="vm.hide">
+        <div id="authorize-div">
             <span>Authorize access to Drive API</span>
-            <!--Button for the user to click to initiate auth sequence -->
-        <!--<button id="authorize-btn">
-                Authorize
-            </button>-->
             <authbtn></authbtn>
         </div>
-        <div id="output" class="well" ng-view></div>
-
-        
+        <div id="output" class="well" ng-view></div> 
     </body>
 </html>
